@@ -1,0 +1,88 @@
+{
+  "name": "context-optimizer",
+  "version": "0.1.0",
+  "description": "Deterministic, local-first context optimization SDK and MCP server for AI coding agents. No cloud, no AI models, no telemetry.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ai-agents",
+    "context-management",
+    "context-optimization",
+    "llm",
+    "claude",
+    "cursor",
+    "ai-coding",
+    "developer-tools",
+    "local-first",
+    "deterministic",
+    "sdk",
+    "typescript",
+    "nodejs"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "Koderkup",
+    "url": "https://github.com/Koderkup"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Koderkup/context-optimizer.git"
+  },
+  "homepage": "https://github.com/Koderkup/context-optimizer#readme",
+  "bugs": {
+    "url": "https://github.com/Koderkup/context-optimizer/issues"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./mcp": {
+      "types": "./dist/mcp/server.d.ts",
+      "import": "./dist/mcp/server.js",
+      "default": "./dist/mcp/server.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "context-optimizer-mcp": "./dist/mcp/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": [
+    "./dist/mcp/cli.js"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "bench": "tsx benchmarks/run.ts",
+    "bench:write": "tsx benchmarks/run.ts --write",
+    "mcp:start": "node dist/mcp/cli.js",
+    "prepublishOnly": "npm run typecheck && npm run build && npm run lint && npm test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@modelcontextprotocol/client": "^2.3.1",
+    "@modelcontextprotocol/server": "^2.3.1",
+    "@types/node": "^24.10.1",
+    "eslint": "^9.39.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.0",
+    "vitest": "^4.0.16",
+    "zod": "^4.3.0"
+  }
+}

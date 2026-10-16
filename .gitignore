@@ -1,0 +1,10 @@
+node_modules
+dist
+coverage
+*.tsbuildinfo
+benchmarks/results/*.json
+!benchmarks/results/.gitkeep
+.DS_Store
+
+*.txt
+*.notes
