@@ -1,6 +1,6 @@
 {
-  "name": "context-optimizer",
-  "version": "0.1.0",
+  "name": "mcp-context-optimizer",
+  "version": "0.1.1",
   "description": "Deterministic, local-first context optimization SDK and MCP server for AI coding agents. No cloud, no AI models, no telemetry.",
   "keywords": [
     "mcp",
@@ -52,7 +52,7 @@
     "./package.json": "./package.json"
   },
   "bin": {
-    "context-optimizer-mcp": "./dist/mcp/cli.js"
+    "mcp-ctx-optimizer": "dist/mcp/cli.js"
   },
   "files": [
     "dist",

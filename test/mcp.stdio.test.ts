@@ -79,10 +79,10 @@ describe.skipIf(!built)('MCP CLI over stdio (requires npm run build)', () => {
       | { result?: { content?: Array<{ text: string }>; isError?: boolean } }
       | undefined;
 
-    expect(init?.result?.serverInfo?.name).toBe('context-optimizer');
+    expect(init?.result?.serverInfo?.name).toBe('mcp-context-optimizer');
     expect(list?.result?.tools?.length).toBe(6);
     expect(call?.result?.isError).toBeFalsy();
     expect(call?.result?.content?.[0]?.text).toContain('# Task');
-    expect(stderr).toContain('context-optimizer MCP server listening on stdio');
+    expect(stderr).toContain('mcp-context-optimizer MCP server listening on stdio');
   }, 15_000);
 });

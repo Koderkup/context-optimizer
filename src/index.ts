@@ -1,5 +1,5 @@
 /**
- * context-optimizer - deterministic, local-first context optimization.
+ * mcp-context-optimizer - deterministic, local-first context optimization.
  *
  * Public API surface. The core SDK has zero runtime dependencies and never
  * performs network requests.

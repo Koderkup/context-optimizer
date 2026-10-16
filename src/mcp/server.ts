@@ -9,9 +9,9 @@ import type { ContextStore } from '../store.js';
 import type { DecisionRecord, InputRecord, OptimizerOptions } from '../types.js';
 
 /**
- * MCP adapter exposing the context-optimizer core over the Model Context
+ * MCP adapter exposing the mcp-context-optimizer core over the Model Context
  * Protocol. Optional: the core SDK never imports this module; only clients
- * that explicitly import `context-optimizer/mcp` (or run the CLI) load it.
+ * that explicitly import `mcp-context-optimizer/mcp` (or run the CLI) load it.
  *
  * Limitation: MCP tools require explicit calls from the client. This server
  * does not intercept or rewrite model requests; a host agent must decide to
@@ -50,7 +50,7 @@ function jsonResult(data: unknown): { content: Array<{ type: 'text'; text: strin
 }
 
 /**
- * Create an McpServer with all context-optimizer tools registered.
+ * Create an McpServer with all mcp-context-optimizer tools registered.
  * The returned server is not connected to any transport until the caller
  * wires one (use {@link startContextOptimizerStdio} for stdio).
  */
@@ -58,7 +58,7 @@ export function createContextOptimizerServer(options: McpAdapterOptions = {}): M
   const store = options.store ?? new InMemoryContextStore();
   const optimizer = new ContextOptimizer(options.optimizer ?? {});
   const server = new McpServer({
-    name: options.serverInfo?.name ?? 'context-optimizer',
+    name: options.serverInfo?.name ?? 'mcp-context-optimizer',
     version: options.serverInfo?.version ?? '0.1.0',
   });
 
@@ -249,7 +249,7 @@ export function createContextOptimizerServer(options: McpAdapterOptions = {}): M
 export function startContextOptimizerStdio(options: McpAdapterOptions = {}): void {
   serveStdio(() => createContextOptimizerServer(options));
   console.error(
-    'context-optimizer MCP server listening on stdio (in-memory store; no network access)',
+    'mcp-context-optimizer MCP server listening on stdio (in-memory store; no network access)',
   );
 }
 

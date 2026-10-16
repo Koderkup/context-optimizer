@@ -1,5 +1,5 @@
 /**
- * Public data types for the context-optimizer core SDK.
+ * Public data types for the mcp-context-optimizer core SDK.
  *
  * Design rules:
  * - Everything is deterministic: identical inputs + config => identical outputs.

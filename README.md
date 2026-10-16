@@ -1,9 +1,9 @@
-# context-optimizer
+# mcp-context-optimizer
 
 Deterministic, **local-first context optimization** for AI coding agents — an SDK
 and an MCP server. No cloud services, no AI models, no API keys, no telemetry.
 
-`context-optimizer` takes the raw exhaust of a coding session (conversation
+`mcp-context-optimizer` takes the raw exhaust of a coding session (conversation
 messages, tool outputs, errors, stack traces, file snapshots, git diffs, test
 results, recorded decisions) and produces a **compact, task-specific context**
 that keeps the facts needed to solve the task — with full provenance for every
@@ -25,19 +25,19 @@ Effectiveness is demonstrated by a reproducible benchmark suite (see
 ## Install
 
 ```bash
-npm install context-optimizer                                # core SDK (zero runtime deps)
+npm install mcp-context-optimizer                             # core SDK (zero runtime deps)
 npm install @modelcontextprotocol/server zod                 # only for the MCP server
 ```
 
 - Node.js >= 20, ESM only.
-- The MCP adapter is **optional**: it lives behind the `context-optimizer/mcp`
+- The MCP adapter is **optional**: it lives behind the `mcp-context-optimizer/mcp`
   export and its dependencies are optional peer dependencies. The core SDK
   never imports the MCP SDK, never opens sockets, and never writes to disk.
 
 ## Quick start (SDK)
 
 ```ts
-import { ContextOptimizer } from 'context-optimizer';
+import { ContextOptimizer } from 'mcp-context-optimizer';
 
 const optimizer = new ContextOptimizer({ tokenBudget: 12_000 });
 
@@ -115,7 +115,7 @@ TypeScript SDK (`@modelcontextprotocol/server` v2). It exposes:
 Claude Code:
 
 ```bash
-claude mcp add context-optimizer -- node /absolute/path/to/context-optimizer/dist/mcp/cli.js
+claude mcp add mcp-context-optimizer -- node /absolute/path/to/mcp-context-optimizer/dist/mcp/cli.js
 ```
 
 Cursor / Claude Desktop / any MCP client (`mcp.json`):
@@ -123,9 +123,9 @@ Cursor / Claude Desktop / any MCP client (`mcp.json`):
 ```json
 {
   "mcpServers": {
-    "context-optimizer": {
+    "mcp-context-optimizer": {
       "command": "node",
-      "args": ["/absolute/path/to/context-optimizer/dist/mcp/cli.js"]
+      "args": ["/absolute/path/to/mcp-context-optimizer/dist/mcp/cli.js"]
     }
   }
 }
@@ -160,7 +160,7 @@ report labels the estimator used (`report.tokens.estimator`) and emits a
 `TOKEN_ESTIMATE_ONLY` warning. For exact counts, plug in your own tokenizer:
 
 ```ts
-import { ContextOptimizer, createTokenEstimator } from 'context-optimizer';
+import { ContextOptimizer, createTokenEstimator } from 'mcp-context-optimizer';
 
 const optimizer = new ContextOptimizer({
   tokenBudget: 12_000,
