@@ -1,6 +1,6 @@
 {
   "name": "mcp-context-optimizer",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Deterministic, local-first context optimization SDK and MCP server for AI coding agents. No cloud, no AI models, no telemetry.",
   "keywords": [
     "mcp",
