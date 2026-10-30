@@ -1,6 +1,6 @@
 {
   "name": "mcp-context-optimizer",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Deterministic, local-first context optimization SDK and MCP server for AI coding agents. No cloud, no AI models, no telemetry.",
   "keywords": [
     "mcp",
@@ -76,13 +76,15 @@
   "devDependencies": {
     "@eslint/js": "^9.39.5",
     "@modelcontextprotocol/client": "^2.3.1",
-    "@modelcontextprotocol/server": "^2.3.1",
     "@types/node": "^24.10.1",
     "eslint": "^9.39.0",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.0",
-    "vitest": "^4.0.16",
+    "vitest": "^4.0.16"
+  },
+  "peerDependencies": {
+    "@modelcontextprotocol/server": "^2.3.1",
     "zod": "^4.3.0"
   }
 }

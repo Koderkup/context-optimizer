@@ -3,7 +3,7 @@
  * CLI entry for the mcp-context-optimizer MCP server (stdio transport).
  *
  * Usage from an MCP client:
- *   { "command": "mcp-context-optimizer-mcp" }
+ *   { "command": "mcp-ctx-optimizer" }
  * or during development:
  *   npx tsx src/mcp/cli.ts
  */
