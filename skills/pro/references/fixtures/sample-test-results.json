@@ -1,0 +1,30 @@
+[
+  {
+    "kind": "test_result",
+    "command": "npm test -- --grep authentication",
+    "passed": 8,
+    "failed": 1,
+    "skipped": 2,
+    "exitCode": 1,
+    "failures": [
+      {
+        "test": "should return 200 for valid token",
+        "error": "Expected 200 but received 401",
+        "file": "tests/auth.test.ts"
+      }
+    ]
+  },
+  {
+    "kind": "test_result",
+    "command": "npm run build",
+    "failed": 3,
+    "exitCode": 2,
+    "failures": [
+      {
+        "test": "TypeScript compilation",
+        "error": "TS2322: Type 'string' is not assignable to type 'number'",
+        "file": "src/types/index.ts"
+      }
+    ]
+  }
+]

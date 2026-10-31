@@ -1,0 +1,15 @@
+{
+  "profile": "review",
+  "description": "Optimization profile for code reviews. Balances code context with decisions and constraints.",
+  "tokenBudget": 3500,
+  "query": "review code quality security constraint decision",
+  "priorities": {
+    "decision": 1.0,
+    "file": 0.9,
+    "diff": 0.8,
+    "message": 0.7,
+    "error": 0.6,
+    "note": 0.5,
+    "test_result": 0.4
+  }
+}

@@ -12,10 +12,10 @@
   <line x1="60" y1="340" x2="60" y2="60" stroke="#555" stroke-width="2"/>
 
   <!-- Labels -->
-  <text x="300" y="390" text-anchor="middle" fill="white" font-size="12" font-family="monospace">
+  <text x="300" y="365" text-anchor="middle" fill="white" font-size="12" font-family="monospace">
     Scenarios
   </text>
-  <text x="20" y="200" text-anchor="middle" fill="white" font-size="12" font-family="monospace"
+  <text x="20" y="200" text-anchor="middle" fill="white" font-size="12" fill="#555" font-family="monospace"
         transform="rotate(-90 20,200)">
     % Reduction
   </text>

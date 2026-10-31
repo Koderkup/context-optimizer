@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "mcp-context-optimizer": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "-p",
+        "mcp-context-optimizer",
+        "-p",
+        "@modelcontextprotocol/server",
+        "-p",
+        "zod",
+        "mcp-ctx-optimizer"
+      ]
+    }
+  }
+}

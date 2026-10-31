@@ -1,0 +1,15 @@
+{
+  "profile": "debug",
+  "description": "Optimization profile for debugging sessions. Prioritizes error traces, failed tests, and diagnostic information.",
+  "tokenBudget": 4000,
+  "query": "error failure exception stack trace test failed",
+  "priorities": {
+    "error": 1.0,
+    "test_result": 0.9,
+    "file": 0.8,
+    "message": 0.7,
+    "decision": 0.6,
+    "diff": 0.5,
+    "note": 0.3
+  }
+}

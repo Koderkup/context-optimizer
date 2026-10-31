@@ -1,0 +1,21 @@
+[
+  {
+    "kind": "error",
+    "message": "TypeError: Cannot read properties of undefined (reading 'length')",
+    "path": "src/utils/formatter.ts",
+    "errorType": "TypeError",
+    "stack": "at Object.formatData (src/utils/formatter.ts:45:12)\n    at processInput (src/main.ts:23:8)\n    at App.run (src/app.ts:15:3)"
+  },
+  {
+    "kind": "error",
+    "message": "SyntaxError: Unexpected token '}' in JSON at position 142",
+    "path": "config/app.json",
+    "errorType": "SyntaxError"
+  },
+  {
+    "kind": "error",
+    "message": "ReferenceError: API_KEY is not defined",
+    "path": "src/services/api.ts",
+    "errorType": "ReferenceError"
+  }
+]
