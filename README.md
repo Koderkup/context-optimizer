@@ -225,12 +225,12 @@ impossible-budget             C_optimizer                79        58      27%  
 required facts fully retained in every scenario: YES
 budget compliance: 9/9 scenarios within budget
 attribution integrity (all source tags resolve): YES
-avg reduction: C=37%  B=21%
-avg retrieval precision(C)=72%  recall(C)=100%
+avg reduction: C=42%  B=21%
+avg retrieval precision(C)=71%  recall(C)=100%
 ```
 
 Candidate C retains 100% of required facts in all 9 scenarios, stays within budget, and
-achieves 37% average reduction (vs 21% for simple dedupe+truncation). On tight budgets
+achieves 42% average reduction (vs 21% for simple dedupe+truncation). On tight budgets
 it preserves mandatory constraints while Baseline B loses them.
 
 ## Testing
@@ -247,4 +247,128 @@ See `test/` for the test suite covering: deterministic output, duplicate handlin
 similar-but-non-identical errors, required-fact preservation, source-reference
 integrity, stable ranking, empty/malformed input, impossible budgets, MCP tool
 validation, and local-only operation (no network).
+
+
+## Custom tokenizers
+
+By default, token counts use the `chars/4` heuristic (deterministic, zero dependencies).
+For production use with a specific model, plug in a real tokenizer:
+
+```ts
+import { ContextOptimizer, type TokenEstimator } from 'mcp-context-optimizer';
+import { encoding_for_model } from 'tiktoken'; // npm install tiktoken (optional dep)
+
+const enc = encoding_for_model('gpt-4');
+const tokenizer: TokenEstimator = {
+  name: 'tiktoken/gpt-4',
+  estimate: (text: string) => enc.encode(text).length,
+};
+
+const optimizer = new ContextOptimizer({
+  tokenBudget: 12_000,
+  tokenEstimator: tokenizer,
+});
+```
+
+The `estimate` function must be **deterministic** — the same string must always
+return the same number. This keeps `buildContext` output byte-identical for
+identical inputs, which is required for caching and reproducibility.
+
+See `src/tokens.ts` for the `TokenEstimator` interface and the built-in
+`defaultTokenEstimator` / `createTokenEstimator` helpers.
+
+## Versioning & SemVer
+
+`mcp-context-optimizer` follows [SemVer](https://semver.org/).
+
+| Component | Stability | Breaking change policy |
+| --- | --- | --- |
+| Public TypeScript API (`src/index.ts` exports) | Stable | Minor version bump |
+| Rendered context text format | Stable | Minor version bump |
+| `OptimizationReport` JSON shape | Stable | Minor version bump |
+| `PIPELINE_VERSION` constant | Internal | Patch may change if output format changes |
+| MCP tool names / arguments | Stable | Minor version bump |
+| Scoring weight defaults | Internal | Patch may change (re-optimize after upgrade) |
+
+`PIPELINE_VERSION` is incremented whenever the pipeline changes in a way that
+affects output (e.g. new compaction stage, new scoring signal). It is part of
+the config hash so that cached results are invalidated automatically.
+
+Current version: `0.1.x` — pre-1.0. Breaking changes may land in minor releases
+until `1.0.0`. After `1.0.0`, breaking changes require a major version bump.
+
+## Comparison with alternatives
+
+| Approach | Deterministic | Local-only | Zero deps | Structured signals | Budget control | Provenance |
+| --- | --- | --- | --- | --- | --- | --- |
+| **mcp-context-optimizer** | ✅ Yes | ✅ Yes | ✅ Yes | ✅ Paths/symbols/stacks/errors | ✅ Hard budget + mandatory | ✅ Every fragment tagged |
+| LLM summarization (external API) | ❌ No | ❌ No | ❌ No | ⚠️ Partial | ⚠️ Soft / best-effort | ❌ None |
+| Simple truncation (head/tail) | ✅ Yes | ✅ Yes | ✅ Yes | ❌ None | ✅ Yes | ❌ None |
+| Semantic chunking (embeddings) | ⚠️ Model-dependent | ❌ Usually remote | ❌ Heavy deps | ❌ None | ⚠️ Soft | ❌ None |
+| RAG / vector retrieval | ⚠️ Approximate | ❌ Usually remote | ❌ Heavy deps | ❌ None | ✅ Yes | ⚠️ Source docs only |
+
+Key differences:
+
+- **No model calls.** Most "context optimizers" are just wrappers around another
+  LLM that summarizes your context — expensive, slow, non-deterministic, and
+  sends your code to a third party. This package does everything locally with
+  pure functions.
+- **Structured, not blind.** It extracts file paths, symbols, stack frames, test
+  failures, and explicit requirements before scoring, so a 200-line stack trace
+  is reduced to its relevant frames rather than chopped at an arbitrary line.
+- **Mandatory facts are never silently dropped.** If required content exceeds
+  the budget, the conflict is reported (`BUDGET_CONFLICT`) instead of silently
+  losing evidence.
+- **Full audit trail.** Every retained fragment carries a `[source: ...]` tag,
+  and the machine-readable report lists every merge, omission, and score
+  component.
+
+## MCP client integration examples
+
+### Claude Code
+
+```bash
+claude mcp add mcp-context-optimizer -- node /absolute/path/to/dist/mcp/cli.js
+```
+
+Then in Claude Code, the agent can call `build_context`, `search_context`,
+`get_decisions`, `get_relevant_errors`, `get_file_history`, and
+`ingest_records` directly.
+
+### Cursor / Claude Desktop (`mcp.json`)
+
+```json
+{
+  "mcpServers": {
+    "mcp-context-optimizer": {
+      "command": "node",
+      "args": ["/absolute/path/to/mcp-context-optimizer/dist/mcp/cli.js"]
+    }
+  }
+}
+```
+
+### Continue.dev
+
+Add to `~/.continue/config.json`:
+
+```json
+{
+  "mcpServers": {
+    "mcp-context-optimizer": {
+      "command": "node",
+      "args": ["/absolute/path/to/mcp-context-optimizer/dist/mcp/cli.js"]
+    }
+  }
+}
+```
+
+**Important:** MCP tool availability does not automatically intercept model
+requests. The client/agent must explicitly call these tools (e.g. call
+`build_context` before answering). Automatic context replacement requires a
+native integration inside the coding agent.
+
+The MCP server stores data **in memory per process lifetime** — restarting the
+server starts from an empty store. Re-ingest records or implement your own
+`ContextStore` (see `src/store.ts`) for persistence.
 

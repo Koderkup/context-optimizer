@@ -1,3 +1,4 @@
+import { compactStage, DEFAULT_COMPACT_OPTIONS, type CompactOptions } from './compact.js';
 import { dedupeStage } from './dedupe.js';
 import { extractStage } from './extract.js';
 import { collectRecords, normalizeStage } from './normalize.js';
@@ -17,7 +18,8 @@ import type {
   Warning,
 } from './types.js';
 
-export const PIPELINE_VERSION = '1';
+/** Bumped when the pipeline changes in a way that affects output. */
+export const PIPELINE_VERSION = '1.1';
 
 interface ResolvedOptions {
   tokenBudget: number;
@@ -26,12 +28,15 @@ interface ResolvedOptions {
   recencyHalfLifeDays: number;
   nearDuplicateThreshold: number;
   maxFragments: number;
+  enableCompaction: boolean;
+  compactOptions: CompactOptions;
+  compactSourceTags: boolean;
 }
 
 /**
  * Deterministic context optimizer.
  *
- * Pipeline: normalize -> extract -> dedupe -> score -> select -> render.
+ * Pipeline: normalize -> extract -> compact -> dedupe -> score -> select -> render.
  * Identical inputs and configuration always produce identical outputs
  * (no wall-clock time, no randomness, stable tie-breaking).
  */
@@ -45,8 +50,18 @@ export class ContextOptimizer {
       estimator: options.tokenEstimator ?? defaultTokenEstimator,
       weights: { ...DEFAULT_WEIGHTS, ...options.weights },
       recencyHalfLifeDays: options.recencyHalfLifeDays ?? 7,
-      nearDuplicateThreshold: options.nearDuplicateThreshold ?? 0.92,
+      nearDuplicateThreshold: options.nearDuplicateThreshold ?? 0.85,
       maxFragments: options.maxFragments ?? 5000,
+      enableCompaction: options.enableCompaction ?? true,
+      compactOptions: {
+        maxStackFrames: options.maxStackFrames ?? DEFAULT_COMPACT_OPTIONS.maxStackFrames,
+        maxToolOutputLines: options.maxToolOutputLines ?? DEFAULT_COMPACT_OPTIONS.maxToolOutputLines,
+        compactCode: options.compactCode ?? DEFAULT_COMPACT_OPTIONS.compactCode,
+        compactErrors: options.compactErrors ?? DEFAULT_COMPACT_OPTIONS.compactErrors,
+        compactToolOutput: options.compactToolOutput ?? DEFAULT_COMPACT_OPTIONS.compactToolOutput,
+        compactMessages: options.compactMessages ?? DEFAULT_COMPACT_OPTIONS.compactMessages,
+      },
+      compactSourceTags: options.compactSourceTags ?? true,
     };
     this.configHash = sha256(
       JSON.stringify({
@@ -57,6 +72,9 @@ export class ContextOptimizer {
         recencyHalfLifeDays: this.opts.recencyHalfLifeDays,
         nearDuplicateThreshold: this.opts.nearDuplicateThreshold,
         maxFragments: this.opts.maxFragments,
+        enableCompaction: this.opts.enableCompaction,
+        compactOptions: this.opts.compactOptions,
+        compactSourceTags: this.opts.compactSourceTags,
       }),
     ).slice(0, 16);
   }
@@ -123,6 +141,10 @@ export class ContextOptimizer {
     const limit = input.limit ?? 10;
     const normalized = normalizeStage(input.records ?? []);
     let fragments = extractStage(normalized.fragments);
+    if (this.opts.enableCompaction) {
+      const comp = compactStage(fragments, this.opts.compactOptions);
+      fragments = comp.fragments;
+    }
     if (fragments.length > this.opts.maxFragments) {
       fragments = fragments.slice(0, this.opts.maxFragments);
     }
@@ -165,8 +187,15 @@ export class ContextOptimizer {
     const normalized = normalizeStage(rawRecords);
     warnings.push(...normalized.warnings);
 
-    // Extraction (before dedup so dedupe can rely on signals if needed).
+    // Stage 2: extraction.
     let fragments = extractStage(normalized.fragments);
+
+    // Stage 3: text compaction (after extraction so signals are preserved).
+    if (this.opts.enableCompaction) {
+      const comp = compactStage(fragments, this.opts.compactOptions);
+      fragments = comp.fragments;
+      warnings.push(...comp.warnings);
+    }
 
     // Deterministic fragment cap.
     if (fragments.length > this.opts.maxFragments) {
@@ -224,7 +253,9 @@ export class ContextOptimizer {
     warnings.push(...selection.warnings);
 
     // Stage 6: render + report.
-    const context = renderContext(input.task, selection.selected);
+    const context = renderContext(input.task, selection.selected, {
+      compactSourceTags: this.opts.compactSourceTags,
+    });
     const estimatedOutput = this.opts.estimator.estimate(context);
     const estimatedInput = this.opts.estimator.estimate(
       normalized.records.map((r) => JSON.stringify(r)).join('\n'),
@@ -237,6 +268,9 @@ export class ContextOptimizer {
         recordsIn: normalized.records.length,
         fragmentsAfterExtraction: normalized.fragments.length,
         fragmentsAfterDedup: deduped.fragments.length,
+        fragmentsAfterCompaction: this.opts.enableCompaction
+          ? fragments.length
+          : normalized.fragments.length,
         fragmentsSelected: selection.selected.length,
         fragmentsOmitted: selection.omitted.length,
       },

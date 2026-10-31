@@ -13,8 +13,9 @@ export {
   shortHash,
 } from './tokens.js';
 export { DEFAULT_WEIGHTS, DECISION_RECENCY_FLOOR, tokenize, scoreStage } from './score.js';
-export { renderContext, sourceTag } from './render.js';
-export { selectStage, fragmentCost } from './select.js';
+export { renderContext, sourceTag, type RenderOptions } from './render.js';
+export { selectStage, fragmentCost, truncateText } from './select.js';
+export { compactStage, compactFragment, compactCode, compactStackTrace, compactToolOutput, compactGeneralText, DEFAULT_COMPACT_OPTIONS, type CompactOptions, type CompactResult } from './compact.js';
 export { dedupeStage, containmentSimilarity } from './dedupe.js';
 export {
   extractStage,

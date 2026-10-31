@@ -10,7 +10,7 @@ export const DEFAULT_WEIGHTS: ScoringWeights = {
   failedAttempt: 2,
   recency: 1.5,
   role: 1,
-  redundancyPenalty: 2,
+  redundancyPenalty: 3,
   callerPriority: 1,
 };
 
@@ -200,8 +200,11 @@ function constraintValue(fragment: Fragment): number {
   return 0;
 }
 
-/** Max trigram containment vs earlier-scored fragments (redundancy signal). */
-function redundancyValue(fragment: Fragment, earlier: Fragment[]): number {
+/**
+ * Redundancy penalty: scales with containment similarity so that near-identical
+ * fragments are penalized more heavily than merely related ones.
+ */
+export function redundancyValue(fragment: Fragment, earlier: Fragment[]): number {
   if (earlier.length === 0 || earlier.length > 400) return 0;
   const mine = trigramSet(fragment.text.toLowerCase().replace(/\s+/g, ' '));
   let max = 0;
@@ -212,10 +215,13 @@ function redundancyValue(fragment: Fragment, earlier: Fragment[]): number {
     if (small.size === 0) continue;
     let inter = 0;
     for (const g of small) if (large.has(g)) inter++;
-    max = Math.max(max, inter / small.size);
+    const containment = inter / small.size;
+    if (containment > max) max = containment;
     if (max > 0.95) break;
   }
-  return max > 0.8 ? max : 0;
+  // Scale penalty with containment: 0.8 -> 0, 0.95 -> 0.5, 1.0 -> 1.0
+  if (max <= 0.8) return 0;
+  return clamp01((max - 0.8) / 0.2);
 }
 
 /**

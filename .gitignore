@@ -4,12 +4,6 @@ coverage
 *.tsbuildinfo
 benchmarks/results/*.json
 !benchmarks/results/.gitkeep
-node_modules
-dist
 build
-coverage
 .DS_Store
-
-*.txt
-*.notes
-skills
+draft.notes

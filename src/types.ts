@@ -166,6 +166,8 @@ export interface Provenance {
   lineRange?: [number, number];
   /** Sub-field of the record the fragment came from, e.g. "stack", "failures[0]". */
   field?: string;
+  /** Original text length before compaction (chars), for reporting. */
+  originalLength?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -272,6 +274,8 @@ export interface FragmentMeta {
   decisionStatus?: DecisionStatus;
   role?: MessageRole;
   exitCode?: number;
+  /** Set when the fragment text was compacted (see compact.ts). */
+  compacted?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -355,6 +359,27 @@ export interface OptimizerOptions {
   nearDuplicateThreshold?: number;
   /** Safety cap on fragments after extraction (deterministic truncation with warning). Default 5000. */
   maxFragments?: number;
+  /**
+   * Text compaction stage. When enabled (default), fragment text is
+   * compacted after extraction: code files lose blank lines, stack traces
+   * are truncated to the top N frames, and verbose tool output is collapsed.
+   * Set to false to keep all text verbatim.
+   */
+  enableCompaction?: boolean;
+  /** Max stack frames to retain per error fragment. Default 5. */
+  maxStackFrames?: number;
+  /** Max lines to retain from tool_call / test_result output. Default 15. */
+  maxToolOutputLines?: number;
+  /** Use compact source tags in rendered output (shorter provenance markers). Default true. */
+  compactSourceTags?: boolean;
+  /** When true (default), strip blank lines from code fragments. */
+  compactCode?: boolean;
+  /** When true (default), truncate stack traces to maxStackFrames. */
+  compactErrors?: boolean;
+  /** When true (default), collapse verbose tool output. */
+  compactToolOutput?: boolean;
+  /** When true (default), trim boilerplate from conversational messages. */
+  compactMessages?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -401,12 +426,17 @@ export type SelectionReason =
   | 'mandatory'
   | 'high_relevance'
   | 'budget_fill'
-  | 'related_to_selected';
+  | 'related_to_selected'
+  | 'truncated';
 
 export interface SelectedFragment {
   fragment: Fragment;
   /** Why this fragment was selected. */
   selectionReason: SelectionReason;
+  /** Set when the fragment text was truncated to fit the budget. */
+  truncated?: boolean;
+  /** Explanation of what was truncated. */
+  truncationNote?: string;
 }
 
 export type OmissionReason = 'low_relevance' | 'budget_exhausted' | 'superseded';
@@ -440,7 +470,9 @@ export type WarningCode =
   | 'NEAR_DUPLICATE_MERGE'
   | 'SUPERSEDED_DECISION'
   | 'EMPTY_INPUT'
-  | 'TOKEN_ESTIMATE_ONLY';
+  | 'TOKEN_ESTIMATE_ONLY'
+  | 'COMPACT_TRUNCATED'
+  | 'TRUNCATED';
 
 export interface Warning {
   code: WarningCode;
@@ -464,6 +496,7 @@ export interface OptimizationReport {
     recordsIn: number;
     fragmentsAfterExtraction: number;
     fragmentsAfterDedup: number;
+    fragmentsAfterCompaction?: number;
     fragmentsSelected: number;
     fragmentsOmitted: number;
   };
