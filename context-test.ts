@@ -28,15 +28,15 @@ const records = [
     failed: 2,
     passed: 1,
     exitCode: 1,
-    failures: [
+  failures: [
       {
-        test: "should handle expired JWT tokens correctly",
-        error: "Expected 401 but received 403",
+        name: "should handle expired JWT tokens correctly",
+        message: "Expected 401 but received 403",
         file: "tests/auth/jwt.test.ts"
       },
       {
-        test: "should refresh expired tokens silently",
-        error: "TokenExpiredError not caught",
+        name: "should refresh expired tokens silently",
+        message: "TokenExpiredError not caught",
         file: "tests/auth/jwt.test.ts"
       }
     ]
@@ -95,15 +95,15 @@ export const verifyToken = (req: Request, res: Response, next: NextFunction) => 
     failed: 2,
     passed: 1,
     exitCode: 1,
-    failures: [
+  failures: [
       {
-        test: "should handle expired JWT tokens correctly",
-        error: "Expected 401 but received 403",
+        name: "should handle expired JWT tokens correctly",
+        message: "Expected 401 but received 403",
         file: "tests/auth/jwt.test.ts"
       },
       {
-        test: "should refresh expired tokens silently",
-        error: "TokenExpiredError not caught",
+        name: "should refresh expired tokens silently",
+        message: "TokenExpiredError not caught",
         file: "tests/auth/jwt.test.ts"
       }
     ]
@@ -120,18 +120,19 @@ export const verifyToken = (req: Request, res: Response, next: NextFunction) => 
   }
 ];
 
-// Создаём оптимизатор
+  // Создаём оптимизатор
 const optimizer = new ContextOptimizer({
   tokenBudget: 4000,
   weights: {
-    error: 1.0,
-    decision: 0.9,
-    file: 0.8,
-    test_result: 0.7,
-    message: 0.6,
-    note: 0.5,
-    diff: 0.4,
-    tool_call: 0.3
+    errorRelevance: 1.0,
+    constraint: 0.9,
+    lexicalOverlap: 0.8,
+    identifierMatch: 0.7,
+    failedAttempt: 0.6,
+    recency: 0.5,
+    role: 0.4,
+    redundancyPenalty: 0.1,
+    callerPriority: 0.3
   }
 });
 

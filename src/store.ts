@@ -1,3 +1,5 @@
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { normalizeStage } from './normalize.js';
 import type { DecisionRecord, InputRecord } from './types.js';
 
@@ -88,6 +90,73 @@ export class InMemoryContextStore implements ContextStore {
   }
 
   /** Records associated with a file path (exact or suffix match). */
+  getByFile(path: string): InputRecord[] {
+    return filterByFile(this.records, path);
+  }
+}
+
+/**
+ * File-backed context store. Records are written to a local JSON file on
+ * every `add()` and read back on construction. No network access, no
+ * telemetry — the file stays on the local machine.
+ *
+ * This is an opt-in persistence layer for the MCP server: pass a `persistPath`
+ * to keep records across server restarts. The default store remains
+ * in-memory only (see {@link InMemoryContextStore}).
+ */
+export class FileContextStore implements ContextStore {
+  private readonly filePath: string;
+  private readonly records: InputRecord[];
+
+  constructor(filePath: string) {
+    this.filePath = resolve(filePath);
+    this.records = this.load();
+  }
+
+  private load(): InputRecord[] {
+    try {
+      const raw = readFileSync(this.filePath, 'utf8');
+      const parsed = JSON.parse(raw) as unknown;
+      if (!Array.isArray(parsed)) return [];
+      const { records } = normalizeStage(parsed as InputRecord[]);
+      return records;
+    } catch {
+      return [];
+    }
+  }
+
+  private flush(): void {
+    try {
+      mkdirSync(dirname(this.filePath), { recursive: true });
+      writeFileSync(this.filePath, JSON.stringify(this.records, null, 2), 'utf8');
+    } catch {
+      // Persistence is best-effort; never throw from the store.
+    }
+  }
+
+  add(records: InputRecord[]): void {
+    const { records: valid } = normalizeStage(records);
+    this.records.push(...valid);
+    this.flush();
+  }
+
+  all(): InputRecord[] {
+    return [...this.records];
+  }
+
+  clear(): void {
+    this.records.length = 0;
+    this.flush();
+  }
+
+  getDecisions(): DecisionRecord[] {
+    return filterDecisions(this.records);
+  }
+
+  getErrors(): InputRecord[] {
+    return filterErrors(this.records);
+  }
+
   getByFile(path: string): InputRecord[] {
     return filterByFile(this.records, path);
   }

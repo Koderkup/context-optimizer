@@ -1,8 +1,20 @@
-import { describe, expect, it } from 'vitest';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterAll, describe, expect, it } from 'vitest';
 
 import { ContextOptimizer } from '../src/optimizer.js';
-import { InMemoryContextStore } from '../src/store.js';
+import { FileContextStore, InMemoryContextStore } from '../src/store.js';
 import type { InputRecord } from '../src/types.js';
+
+const tmpDir = join(tmpdir(), `mcp-store-test-${Date.now()}`);
+afterAll(() => {
+  try {
+    rmSync(tmpDir, { recursive: true, force: true });
+  } catch {
+    // best-effort cleanup
+  }
+});
 
 describe('InMemoryContextStore', () => {
   it('adds, lists and clears records', () => {
@@ -51,5 +63,55 @@ describe('InMemoryContextStore', () => {
     } finally {
       globalThis.fetch = originalFetch;
     }
+  });
+});
+
+describe('FileContextStore', () => {
+  it('starts empty when the file does not exist', () => {
+    const path = join(tmpDir, 'empty.json');
+    const store = new FileContextStore(path);
+    expect(store.all()).toHaveLength(0);
+  });
+
+  it('persists records to disk and restores them on restart', () => {
+    const path = join(tmpDir, 'persist.json');
+    const store1 = new FileContextStore(path);
+    store1.add([
+      { kind: 'note', text: 'hello' },
+      { kind: 'decision', text: 'use TS', status: 'accepted' },
+    ]);
+    expect(store1.all()).toHaveLength(2);
+
+    // Simulate a server restart: new instance, same path.
+    const store2 = new FileContextStore(path);
+    expect(store2.all()).toHaveLength(2);
+    expect(store2.all()[0]?.kind).toBe('note');
+    expect(store2.getDecisions()).toHaveLength(1);
+  });
+
+  it('ignores malformed records on add', () => {
+    const path = join(tmpDir, 'malformed.json');
+    const store = new FileContextStore(path);
+    store.add([{ kind: 'note', text: '' } as InputRecord]);
+    expect(store.all()).toHaveLength(0);
+  });
+
+  it('clear() removes persisted records', () => {
+    const path = join(tmpDir, 'clear.json');
+    const store = new FileContextStore(path);
+    store.add([{ kind: 'note', text: 'x' }]);
+    store.clear();
+    expect(store.all()).toHaveLength(0);
+    // Reload to confirm the file was cleared too.
+    const reloaded = new FileContextStore(path);
+    expect(reloaded.all()).toHaveLength(0);
+  });
+
+  it('recovers gracefully from corrupt file content', () => {
+    const path = join(tmpDir, 'corrupt.json');
+    mkdirSync(tmpDir, { recursive: true });
+    writeFileSync(path, 'not json{', 'utf8');
+    const store = new FileContextStore(path);
+    expect(store.all()).toHaveLength(0);
   });
 });

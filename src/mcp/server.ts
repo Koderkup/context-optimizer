@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import { ContextOptimizer } from '../optimizer.js';
 import { validateRecord } from '../normalize.js';
-import { InMemoryContextStore, filterByFile, filterDecisions, filterErrors } from '../store.js';
+import { FileContextStore, InMemoryContextStore, filterByFile, filterDecisions, filterErrors } from '../store.js';
 import type { ContextStore } from '../store.js';
 import type { DecisionRecord, InputRecord, OptimizerOptions } from '../types.js';
 
@@ -39,6 +39,11 @@ This server never makes network requests and stores data in memory only (per pro
 export interface McpAdapterOptions {
   /** Store backing the server. Defaults to a fresh in-memory store. */
   store?: ContextStore;
+  /**
+   * When set, records are persisted to this local JSON file and restored on
+   * restart. The file stays on the local machine; no network access is used.
+   */
+  persistPath?: string;
   /** Optimizer configuration (token budget, weights, ...). */
   optimizer?: OptimizerOptions;
   serverInfo?: { name?: string; version?: string };
@@ -55,7 +60,7 @@ function jsonResult(data: unknown): { content: Array<{ type: 'text'; text: strin
  * wires one (use {@link startContextOptimizerStdio} for stdio).
  */
 export function createContextOptimizerServer(options: McpAdapterOptions = {}): McpServer {
-  const store = options.store ?? new InMemoryContextStore();
+  const store = options.store ?? (options.persistPath ? new FileContextStore(options.persistPath) : new InMemoryContextStore());
   const optimizer = new ContextOptimizer(options.optimizer ?? {});
   const server = new McpServer({
     name: options.serverInfo?.name ?? 'mcp-context-optimizer',
@@ -236,6 +241,81 @@ export function createContextOptimizerServer(options: McpAdapterOptions = {}): M
         omitted: result.omitted,
         report: result.report,
       });
+    },
+  );
+
+  // MCP prompts: discoverable via prompts/list and invocable as slash commands.
+  server.registerPrompt(
+    'optimize-context',
+    {
+      title: 'Optimize Context',
+      description:
+        'Build a compact, task-specific context from stored records. Use before answering a task to keep only relevant facts within the token budget.',
+      argsSchema: z.object({
+        task: z.string().min(1).describe('The current task description.'),
+        query: z.string().optional().describe('Additional relevance terms.'),
+        tokenBudget: z.number().int().min(1).optional().describe('Override the server token budget.'),
+      }),
+    },
+    async ({ task, query, tokenBudget }) => {
+      const all = store.all();
+      const result = optimizer.buildContextSync({
+        task,
+        ...(query ? { query } : {}),
+        records: all,
+        ...(tokenBudget ? { tokenBudget } : {}),
+      });
+      return {
+        messages: [
+          {
+            role: 'user' as const,
+            content: {
+              type: 'text' as const,
+              text: `${result.context}\n\n[Optimization report: ${result.stats.estimatedInputTokens} -> ${result.stats.estimatedOutputTokens} tokens, ${(result.stats.reductionRatio * 100).toFixed(0)}% reduction. ${result.sources.length} sources retained, ${result.omitted.length} omitted.]`,
+            },
+          },
+        ],
+      };
+    },
+  );
+
+  server.registerPrompt(
+    'summarize-errors',
+    {
+      title: 'Summarize Errors',
+      description:
+        'Retrieve recorded errors and failed attempts, optionally ranked by a query. Use when debugging to see what has failed so far.',
+      argsSchema: z.object({
+        query: z.string().optional().describe('Optional relevance query; omit for all errors.'),
+      }),
+    },
+    async ({ query }) => {
+      const errors = store.getErrors ? store.getErrors() : filterErrors(store.all());
+      if (!query || errors.length === 0) {
+        return {
+          messages: [
+            {
+              role: 'user' as const,
+              content: {
+                type: 'text' as const,
+                text: `${errors.length} error(s) recorded.\n\n${errors.map((e) => `- [${e.kind}] ${'message' in e ? e.message : JSON.stringify(e).slice(0, 200)}`).join('\n')}`,
+              },
+            },
+          ],
+        };
+      }
+      const hits = optimizer.search({ query, records: errors });
+      return {
+        messages: [
+          {
+            role: 'user' as const,
+            content: {
+              type: 'text' as const,
+              text: `${hits.length} relevant error(s) for "${query}":\n\n${hits.map((h) => `- ${h.fragment.text}`).join('\n\n')}`,
+            },
+          },
+        ],
+      };
     },
   );
 

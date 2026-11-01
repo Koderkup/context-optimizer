@@ -12,6 +12,13 @@ export {
   sha256,
   shortHash,
 } from './tokens.js';
+export {
+  claudeEstimator,
+  gpt4Estimator,
+  mistralEstimator,
+  TOKENIZER_PRESETS,
+  getPreset,
+} from './token-presets.js';
 export { DEFAULT_WEIGHTS, DECISION_RECENCY_FLOOR, tokenize, scoreStage } from './score.js';
 export { renderContext, sourceTag, type RenderOptions } from './render.js';
 export { selectStage, fragmentCost, truncateText } from './select.js';
@@ -34,7 +41,7 @@ export {
   stableStringify,
   validateRecord,
 } from './normalize.js';
-export { InMemoryContextStore, filterByFile, filterDecisions, filterErrors } from './store.js';
+export { InMemoryContextStore, FileContextStore, filterByFile, filterDecisions, filterErrors } from './store.js';
 export type { ContextStore } from './store.js';
 
 export type {

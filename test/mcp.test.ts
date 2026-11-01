@@ -41,6 +41,25 @@ describe('MCP adapter (in-memory transport)', () => {
     ]);
   });
 
+  it('lists all expected prompts', async () => {
+    const { prompts } = await client.listPrompts();
+    const names = prompts.map((p) => p.name).sort();
+    expect(names).toEqual(['optimize-context', 'summarize-errors']);
+  });
+
+  it('optimize-context prompt builds compact context', async () => {
+    const result = await client.getPrompt({
+      name: 'optimize-context',
+      arguments: { task: 'Fix RS256 token verification in src/auth.ts' },
+    });
+    const text = (result.messages[0]?.content as { type: string; text: string } | undefined)?.type === 'text'
+      ? (result.messages[0]?.content as { type: string; text: string }).text
+      : '';
+    expect(text).toContain('# Task');
+    expect(text).toContain('RS256');
+    expect(text).toContain('reduction');
+  });
+
   it('ingests valid records and reports rejected malformed ones', async () => {
     const result = await client.callTool({
       name: 'ingest_records',
@@ -61,6 +80,18 @@ describe('MCP adapter (in-memory transport)', () => {
     expect(data.accepted).toEqual(['d1', 'e1', 'f1']);
     expect(data.rejected).toHaveLength(1);
     expect(data.totalStored).toBe(3);
+  });
+
+  it('summarize-errors prompt returns recorded errors', async () => {
+    const result = await client.getPrompt({
+      name: 'summarize-errors',
+      arguments: {},
+    });
+    const text = (result.messages[0]?.content as { type: string; text: string } | undefined)?.type === 'text'
+      ? (result.messages[0]?.content as { type: string; text: string }).text
+      : '';
+    expect(text).toContain('error(s) recorded');
+    expect(text).toContain('TypeError');
   });
 
   it('get_decisions returns stored decisions with status', async () => {

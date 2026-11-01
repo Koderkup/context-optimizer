@@ -1,13 +1,14 @@
 {
   "name": "mcp-context-optimizer",
-  "version": "0.1.7",
-  "description": "Deterministic, local-first context optimization SDK and MCP server for AI coding agents. No cloud, no AI models, no telemetry.",
+  "version": "0.1.8",
+  "description": "Keep critical context within token limits for AI coding agents. Deterministic, local-first context optimization SDK and MCP server.",
   "keywords": [
     "mcp",
     "model-context-protocol",
     "ai-agents",
     "context-management",
     "context-optimization",
+    "token-budget",
     "llm",
     "claude",
     "cursor",
@@ -72,7 +73,7 @@
     "bench": "tsx benchmarks/run.ts",
     "bench:write": "tsx benchmarks/run.ts --write",
     "mcp:start": "node dist/mcp/cli.js",
-    "prepublishOnly": "npm run typecheck && npm run build && npm run lint && npm test"
+    "prepublishOnly": "npm run typecheck && npm run build && npm run lint && npm run test"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

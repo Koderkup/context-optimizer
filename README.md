@@ -1,7 +1,6 @@
 # mcp-context-optimizer
 
-Deterministic, **local-first context optimization** for AI coding agents — an SDK
-and an MCP server. No cloud services, no AI models, no API keys, no telemetry.
+Keep critical context within token limits for AI coding agents — without losing errors, decisions, or file references.
 
 `mcp-context-optimizer` takes the raw exhaust of a coding session (conversation
 messages, tool outputs, errors, stack traces, file snapshots, git diffs, test
@@ -65,6 +64,87 @@ console.log(result.stats);     // estimated input/output tokens + reduction rati
 ```
 
 Identical inputs and configuration always produce byte-identical outputs.
+
+## Quick start (CLI, no MCP client needed)
+
+```bash
+# Build a compact context from a records file
+npx mcp-context-optimizer build --task "Fix auth" --records session.json
+
+# Pipe records from stdin
+cat session.json | npx mcp-context-optimizer build --task "Fix auth" --stdin
+
+# Write the result to a file
+npx mcp-context-optimizer build --task "Fix auth" --records session.json --output context.txt
+```
+
+## Before / after
+
+A typical debugging session is full of repeated tool outputs, chit-chat, and
+stale context. Here is what happens with a realistic session:
+
+**Before** — raw session dump (4992 tokens, over budget):
+
+```
+# Task: Stop the duplicate-charge bug in src/billing/charge.ts
+
+message #1 (user): Customers get charged twice when retrying; the duplicate
+originates in src/billing/charge.ts
+message #2 (assistant): Chattering about hypothesis 0: maybe the cache, maybe
+the clock, maybe the moon phase. Let us look at more logs.
+... (40 lines of chattering)
+message #42 (assistant): Chattering about hypothesis 39: maybe the cache...
+tool_call #43: npm test -- billing
+RUN v2.1.0
+ ❯ src/billing/charge.test.ts (1 test)
+   × duplicate charge
+     → DuplicateKeyError: duplicate key value violates unique constraint
+ Test Files  1 failed (1)
+... (8 identical copies of the same test output)
+error #52: DuplicateKeyError: duplicate key value violates unique constraint
+    at chargeOnce (src/billing/charge.ts:88:11)
+decision #53: Idempotency keys must be generated per logical order, not per
+retry attempt
+file #54: src/billing/charge.ts
+export async function chargeOnce(order, retry) {
+  const key = `ord-${order.id}-retry-${retry.attempt}`;
+  return stripe.charges.create({ amount: order.total, idempotencyKey: key });
+}
+```
+
+**After** — optimized context (328 tokens, 93% reduction, all required facts retained):
+
+```
+# Task
+
+Stop the duplicate-charge bug in src/billing/charge.ts
+
+## Errors
+- [error] DuplicateKeyError: duplicate key value violates unique constraint
+  "charges_idempotency_key_key"
+  src/billing/charge.ts:88:11  [source: fr_a1b2c3 | record r52]
+
+## Decisions
+- [decision] Idempotency keys must be generated per logical order, not per retry
+  attempt  [source: fr_d4e5f6 | record r53]
+
+## Files
+- [file] src/billing/charge.ts
+  export async function chargeOnce(order, retry) {
+    const key = `ord-${order.id}-retry-${retry.attempt}`;
+    return stripe.charges.create({ amount: order.total, idempotencyKey: key });
+  }  [source: fr_g7h8i9 | record r54]
+```
+
+**What was dropped:** 40 lines of chattering, 7 duplicate test runs, noise notes.
+**What was kept:** the error, the accepted decision, the relevant file — all with
+source references so you can trace every line back to its origin.
+
+Run the benchmark yourself:
+
+```bash
+npm run bench
+```
 
 ## How it works: the pipeline
 
@@ -140,9 +220,29 @@ MCP tool availability does **not** automatically intercept or rewrite model
 requests. A compatible client must explicitly call these tools (e.g. the agent
 decides to call `build_context` before answering a task). Automatic context
 replacement would require a native integration inside the coding agent
-(hooking its prompt assembly). This server also stores data **in memory per
-process lifetime** — restarting the server process starts from an empty store;
-re-ingest or implement your own `ContextStore` for persistence.
+(hooking its prompt assembly).
+
+### Persistence (opt-in)
+
+By default the store is **in-memory per process lifetime** — restarting the
+server starts from an empty store. To keep records across restarts, pass
+`--persist <path>` to the CLI or set `persistPath` in `McpAdapterOptions`:
+
+```bash
+mcp-ctx-optimizer --persist ~/.cache/mcp-context-optimizer/context.json
+```
+
+```ts
+import { createContextOptimizerServer } from 'mcp-context-optimizer/mcp';
+
+const server = createContextOptimizerServer({
+  persistPath: './context-store.json',
+});
+```
+
+Records are written to a local JSON file; no network access is used. The file
+stays on the local machine. Implement the `ContextStore` interface for custom
+backends (e.g. SQLite).
 
 ## Privacy & local operation
 
@@ -167,6 +267,30 @@ const optimizer = new ContextOptimizer({
   tokenEstimator: createTokenEstimator('my-tok', (text) => myTokenizer.encode(text).length),
 });
 ```
+
+### Built-in tokenizer presets
+
+For convenience, the SDK ships with presets tuned for popular model families:
+
+```ts
+import { ContextOptimizer, claudeEstimator, gpt4Estimator } from 'mcp-context-optimizer';
+
+const optimizer = new ContextOptimizer({
+  tokenBudget: 12_000,
+  tokenEstimator: claudeEstimator, // ~3 chars/token, tuned for Claude
+});
+
+// Or look up a preset by name:
+import { getPreset } from 'mcp-context-optimizer';
+const est = getPreset('claude-3');
+```
+
+| Preset       | Heuristic       | Best for                         |
+| ------------ | --------------- | -------------------------------- |
+| `default`    | `ceil(chars / 4)` | Default; good for prose-heavy   |
+| `claude-3`   | `ceil(chars / 3)` | Claude code/context; denser tokens |
+| `gpt-4`      | `ceil(chars / 4)` | GPT-4 family                     |
+| `mistral`    | `ceil(chars / 4)` | Mistral family                   |
 
 ## Benchmarks
 
