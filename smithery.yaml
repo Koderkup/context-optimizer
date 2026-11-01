@@ -2,6 +2,7 @@ schemaVersion: 1.0.0
 name: mcp-context-optimizer
 displayName: Context Optimizer
 description: Keep critical context within token limits for AI coding agents
+icon: https://raw.githubusercontent.com/Koderkup/context-optimizer/main/asset/icon.png
 package:
   name: mcp-context-optimizer
   version: 0.1.8
