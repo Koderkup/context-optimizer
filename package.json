@@ -1,6 +1,6 @@
 {
   "name": "mcp-context-optimizer",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "Keep critical context within token limits for AI coding agents. Deterministic, local-first context optimization SDK and MCP server.",
   "keywords": [
     "mcp",
