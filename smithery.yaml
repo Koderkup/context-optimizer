@@ -1,0 +1,15 @@
+schemaVersion: 1.0.0
+name: mcp-context-optimizer
+displayName: Context Optimizer
+description: Keep critical context within token limits for AI coding agents
+package:
+  name: mcp-context-optimizer
+  version: 0.1.8
+  registry: npm
+server:
+  type: stdio
+  command: npx
+  args:
+    - mcp-ctx-optimizer
+    - --persist
+    - ~/.cache/mcp-context-optimizer/context.json

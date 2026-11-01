@@ -1,0 +1,20 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "mcp_tool",
+            "mcpServerName": "context-optimizer",
+            "toolName": "build_context",
+            "input": {
+              "task": "${prompt}",
+              "tokenBudget": 12000
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

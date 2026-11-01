@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "context-optimizer": {
+      "command": "npx",
+      "args": [
+        "mcp-ctx-optimizer",
+        "--persist",
+        "~/.cache/mcp-context-optimizer/context.json"
+      ]
+    }
+  }
+}

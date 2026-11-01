@@ -487,6 +487,37 @@ Add to `~/.continue/config.json`:
 }
 ```
 
+## MCP registries
+
+The package is listed in MCP registries for one-click installation:
+
+| Registry | How to add |
+|---|---|
+| **Smithery** | See [`smithery.yaml`](smithery.yaml). The server is configured with `--persist` so records survive restarts. |
+| **Glama** | Add server via Glama dashboard: command `npx mcp-ctx-optimizer`, transport `stdio`. |
+| **MCP.so** | Add server via MCP.so dashboard: command `npx mcp-ctx-optimizer`, transport `stdio`. |
+
+**Smithery example** — add to your Smithery client config:
+
+```json
+{
+  "mcpServers": {
+    "context-optimizer": {
+      "command": "npx",
+      "args": [
+        "mcp-ctx-optimizer",
+        "--persist",
+        "~/.cache/mcp-context-optimizer/context.json"
+      ]
+    }
+  }
+}
+```
+
+**Claude Code hooks** — see [`claude-code-hooks.json`](claude-code-hooks.json). Register it in Claude Code settings to automatically call `build_context` on every user prompt (reduces the explicit-invocation friction).
+
+**Claude Desktop** — see [`claude-desktop-config.json`](claude-desktop-config.json). Add to your Claude Desktop `claude_desktop_config.json`.
+
 **Important:** MCP tool availability does not automatically intercept model
 requests. The client/agent must explicitly call these tools (e.g. call
 `build_context` before answering). Automatic context replacement requires a
@@ -494,5 +525,7 @@ native integration inside the coding agent.
 
 The MCP server stores data **in memory per process lifetime** — restarting the
 server starts from an empty store. Re-ingest records or implement your own
-`ContextStore` (see `src/store.ts`) for persistence.
+`ContextStore` (see `src/store.ts`) for persistence. Use `--persist` for
+built-in file persistence.
+
 
