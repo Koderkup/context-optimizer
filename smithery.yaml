@@ -5,7 +5,7 @@ description: Keep critical context within token limits for AI coding agents
 icon: https://raw.githubusercontent.com/Koderkup/context-optimizer/main/asset/icon.png
 package:
   name: mcp-context-optimizer
-  version: 0.1.8
+  version: 0.1.9
   registry: npm
 server:
   type: stdio
