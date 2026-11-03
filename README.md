@@ -505,7 +505,7 @@ The package is listed in MCP registries for one-click installation:
     "context-optimizer": {
       "command": "npx",
       "args": [
-        "mcp-ctx-optimizer",
+        "mcp-context-optimizer",
         "--persist",
         "~/.cache/mcp-context-optimizer/context.json"
       ]
