@@ -229,7 +229,7 @@ server starts from an empty store. To keep records across restarts, pass
 `--persist <path>` to the CLI or set `persistPath` in `McpAdapterOptions`:
 
 ```bash
-mcp-ctx-optimizer --persist ~/.cache/mcp-context-optimizer/context.json
+mcp-context-optimizer --persist ~/.cache/mcp-context-optimizer/context.json
 ```
 
 ```ts
@@ -494,8 +494,8 @@ The package is listed in MCP registries for one-click installation:
 | Registry | How to add |
 |---|---|
 | **Smithery** | See [`smithery.yaml`](smithery.yaml). The server is configured with `--persist` so records survive restarts. |
-| **Glama** | Add server via Glama dashboard: command `npx mcp-ctx-optimizer`, transport `stdio`. |
-| **MCP.so** | Add server via MCP.so dashboard: command `npx mcp-ctx-optimizer`, transport `stdio`. |
+| **Glama** | Add server via Glama dashboard: command `npx mcp-context-optimizer`, transport `stdio`. |
+| **MCP.so** | Add server via MCP.so dashboard: command `npx mcp-context-optimizer`, transport `stdio`. |
 
 **Smithery example** — add to your Smithery client config:
 
